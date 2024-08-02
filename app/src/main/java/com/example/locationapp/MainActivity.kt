@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.locationapp.ui.theme.LocationAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,10 +32,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+
+            val viewModel: LocationViewModel = viewModel()
             LocationAppTheme {
 
                 Surface {
-                    MyApp()
+                    MyApp(viewModel)
                 }
 //                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
 //                    LocationDisplay(modifier = Modifier.padding(innerPadding))
@@ -46,18 +49,20 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun MyApp() {
+fun MyApp(viewModel: LocationViewModel) {
     val context = LocalContext.current
     val locationUtils = LocationUtils(context)
-    LocationDisplay(locationUtils = locationUtils, context = context)
+    LocationDisplay(viewModel = viewModel,locationUtils = locationUtils, context = context)
 }
 
 @Composable
 fun LocationDisplay(
+    viewModel: LocationViewModel,
     locationUtils: LocationUtils,
-    context: Context,
-    modifier: Modifier = Modifier
+    context: Context
 ){
+
+    val location = viewModel.locationData.value
 
 
     val requestPermissionLuncher = rememberLauncherForActivityResult(
@@ -67,7 +72,11 @@ fun LocationDisplay(
             if( permissions[ACCESS_FINE_LOCATION] == true &&
                 permissions[ACCESS_COARSE_LOCATION] == true ){
 
+
+
                 //acess granted
+
+                locationUtils.requestLocationUpdates(viewModel = viewModel)
 
             }else{
                 //request permission
@@ -95,10 +104,18 @@ fun LocationDisplay(
         verticalArrangement = Arrangement.Center
     ){
 
-        Text(text = "Location not available")
+
+        if(location != null){
+            Text(text = "Latitude: ${location.latitude}")
+            Text(text = "Longitude: ${location.longitude}")
+        }else{
+            Text(text = "Location not available")
+        }
         Button(onClick = {
             if (locationUtils.hasLocationPermission(context)){
                 // Permissions granted already
+
+                locationUtils.requestLocationUpdates(viewModel = viewModel)
 
             }else{
                 // request location permission
